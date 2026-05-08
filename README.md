@@ -51,3 +51,60 @@ For test coverage report:
 ```bash
 pytest --cov
 ```
+
+## Running the API
+
+Start the FastAPI application with:
+
+```bash
+poetry run uvicorn app.main:app --reload
+```
+
+If Poetry is not installed globally but dependencies are already installed in the local virtual environment, run:
+
+```bash
+./.venv/bin/uvicorn app.main:app --reload
+```
+
+Swagger documentation is available at:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+The Gradio frontend is available at:
+
+```text
+http://127.0.0.1:8000/ui
+```
+
+Analyze one transcript:
+
+```bash
+curl -G "http://127.0.0.1:8000/analyses" \
+  --data-urlencode "transcript=Discuss the launch plan and assign next steps."
+```
+
+Retrieve a stored analysis:
+
+```bash
+curl "http://127.0.0.1:8000/analyses/<analysis-id>"
+```
+
+Analyze multiple transcripts concurrently:
+
+```bash
+curl -X POST "http://127.0.0.1:8000/analyses/batch" \
+  -H "Content-Type: application/json" \
+  -d '{"transcripts":["Discuss launch risks.","Review onboarding plan."]}'
+```
+
+Analysis results are stored in memory, so they reset when the API process restarts.
+
+## OpenAI Adapter Integration Test
+
+The live OpenAI adapter test is skipped by default so local test runs do not require network access or credentials. To run it explicitly:
+
+```bash
+RUN_OPENAI_INTEGRATION_TESTS=1 poetry run pytest tests/adapters/test_openai.py
+```

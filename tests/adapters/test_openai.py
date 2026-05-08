@@ -1,7 +1,11 @@
-from app import configurations
+import os
+
 import pydantic
-from tests.adapters import mock_data
+import pytest
+
+from app import configurations
 from app.adapters import openai
+from tests.adapters import mock_data
 
 
 class Response(pydantic.BaseModel):
@@ -10,6 +14,9 @@ class Response(pydantic.BaseModel):
 
 
 def test_openai_adapter() -> None:
+    if os.getenv("RUN_OPENAI_INTEGRATION_TESTS") != "1":
+        pytest.skip("Set RUN_OPENAI_INTEGRATION_TESTS=1 to run the live OpenAI adapter test.")
+
     # Configuration
     env_variables = configurations.EnvConfigs()
 
