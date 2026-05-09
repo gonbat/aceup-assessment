@@ -1,5 +1,5 @@
-from typing import Protocol
 from threading import RLock
+from typing import Protocol
 
 from app.domain import TranscriptAnalysis
 

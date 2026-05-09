@@ -1,4 +1,4 @@
-import pydantic
+from pydantic import BaseModel
 import pytest
 from fastapi.testclient import TestClient
 
@@ -13,8 +13,16 @@ class FakeLLM(LLm):
         self,
         system_prompt: str,
         user_prompt: str,
-        dto: type[pydantic.BaseModel],
-    ) -> pydantic.BaseModel:
+        dto: type[BaseModel],
+    ) -> BaseModel:
+        return dto(summary="API summary.", action_items=["Confirm owner", "Set deadline"])
+
+    async def run_completion_async(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        dto: type[BaseModel],
+    ) -> BaseModel:
         return dto(summary="API summary.", action_items=["Confirm owner", "Set deadline"])
 
 

@@ -7,7 +7,8 @@ import gradio as gr
 
 from app.adapters.openai import OpenAIAdapter
 from app.configurations import EnvConfigs
-from app.dtos import (
+from app.mappers import to_batch_transcript_analysis_response, to_transcript_analysis_response
+from app.schemas import (
     BatchTranscriptAnalysisRequest,
     BatchTranscriptAnalysisResponse,
     TranscriptAnalysisResponse,
@@ -74,7 +75,7 @@ def analyze_transcript(
     service: Annotated[TranscriptAnalysisService, Depends(get_analysis_service)],
 ) -> TranscriptAnalysisResponse:
     analysis = service.analyze(transcript)
-    return TranscriptAnalysisResponse.from_domain(analysis)
+    return to_transcript_analysis_response(analysis)
 
 
 @app.get("/analyses/{analysis_id}", response_model=TranscriptAnalysisResponse)
@@ -83,7 +84,7 @@ def get_transcript_analysis(
     service: Annotated[TranscriptAnalysisService, Depends(get_analysis_service)],
 ) -> TranscriptAnalysisResponse:
     analysis = service.get(analysis_id)
-    return TranscriptAnalysisResponse.from_domain(analysis)
+    return to_transcript_analysis_response(analysis)
 
 
 @app.post("/analyses/batch", response_model=BatchTranscriptAnalysisResponse)
@@ -92,7 +93,7 @@ async def analyze_transcripts_batch(
     service: Annotated[TranscriptAnalysisService, Depends(get_analysis_service)],
 ) -> BatchTranscriptAnalysisResponse:
     analyses = await service.analyze_many(request.transcripts)
-    return BatchTranscriptAnalysisResponse.from_domain(analyses)
+    return to_batch_transcript_analysis_response(analyses)
 
 
 app = gr.mount_gradio_app(app, build_gradio_app(get_gradio_analysis_service), path="/ui")
