@@ -3,7 +3,17 @@ import pytest
 
 from app.domain import TranscriptAnalysis
 from app.errors import AnalysisNotFoundError, ConfigurationError, InvalidTranscriptError
-from app.frontend import analyze_transcript, format_action_items, lookup_analysis
+from app.frontend import (
+    analyze_transcript,
+    analyze_transcript_for_ui,
+    format_action_items,
+    format_status_html,
+    hide_lookup_loading,
+    lookup_analysis,
+    lookup_analysis_for_ui,
+    show_analyze_failure,
+    show_analyze_loading,
+)
 
 
 class FakeService:
@@ -43,6 +53,18 @@ def test_analyze_transcript_returns_formatted_result() -> None:
     )
 
 
+def test_analyze_transcript_for_ui_reveals_result_group() -> None:
+    result_visibility, result_markdown = analyze_transcript_for_ui(
+        "Discuss roadmap.",
+        FakeService,
+    )
+
+    assert result_visibility["visible"] is True
+    assert "### Analysis ID\n`analysis-1`" in result_markdown
+    assert "### Summary\nThe team aligned on next steps." in result_markdown
+    assert "### Suggested Next Steps\n1. Confirm owner\n2. Set deadline" in result_markdown
+
+
 def test_lookup_analysis_returns_formatted_result() -> None:
     result = lookup_analysis(" analysis-1 ", FakeService)
 
@@ -51,6 +73,53 @@ def test_lookup_analysis_returns_formatted_result() -> None:
         "The team aligned on next steps.",
         "1. Confirm owner\n2. Set deadline",
     )
+
+
+def test_show_analyze_loading_sets_status_and_hides_results() -> None:
+    status_visibility, result_visibility, result_markdown, button_state = show_analyze_loading()
+
+    assert status_visibility["visible"] is True
+    assert "Analyzing transcript..." in status_visibility["value"]
+    assert result_visibility["visible"] is False
+    assert result_markdown == ""
+    assert button_state["value"] == "Analyzing..."
+    assert button_state["interactive"] is False
+
+
+def test_lookup_analysis_for_ui_reveals_result_group() -> None:
+    result_visibility, result_markdown = lookup_analysis_for_ui(" analysis-1 ", FakeService)
+
+    assert result_visibility["visible"] is True
+    assert "### Analysis ID\n`analysis-1`" in result_markdown
+    assert "### Summary\nThe team aligned on next steps." in result_markdown
+    assert "### Suggested Next Steps\n1. Confirm owner\n2. Set deadline" in result_markdown
+
+
+def test_hide_lookup_loading_clears_status_and_restores_button() -> None:
+    status_visibility, button_state = hide_lookup_loading()
+
+    assert status_visibility["visible"] is False
+    assert status_visibility["value"] == ""
+    assert button_state["value"] == "Lookup"
+    assert button_state["interactive"] is True
+
+
+def test_show_analyze_failure_sets_error_status_and_restores_button() -> None:
+    status_visibility, result_visibility, result_markdown, button_state = show_analyze_failure()
+
+    assert status_visibility["visible"] is True
+    assert "Could not complete the request." in status_visibility["value"]
+    assert result_visibility["visible"] is False
+    assert result_markdown == ""
+    assert button_state["value"] == "Analyze"
+    assert button_state["interactive"] is True
+
+
+def test_format_status_html_escapes_message() -> None:
+    status_html = format_status_html("<script>alert('x')</script>")
+
+    assert "&lt;script&gt;alert(&#x27;x&#x27;)&lt;/script&gt;" in status_html
+    assert "<script>" not in status_html
 
 
 def test_analyze_transcript_maps_empty_input_to_gradio_error() -> None:

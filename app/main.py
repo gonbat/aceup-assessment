@@ -20,7 +20,7 @@ from app.errors import (
     InvalidTranscriptError,
     LLMCompletionError,
 )
-from app.frontend import build_gradio_app
+from app.frontend import APP_CSS, build_gradio_app
 from app.ports import LLm
 from app.repositories import InMemoryTranscriptAnalysisRepository, TranscriptAnalysisRepository
 from app.services import TranscriptAnalysisService
@@ -112,4 +112,9 @@ async def analyze_transcripts_batch(
     return to_batch_transcript_analysis_response(analyses)
 
 
-app = gr.mount_gradio_app(app, build_gradio_app(get_gradio_analysis_service), path="/")
+app = gr.mount_gradio_app(
+    app,
+    build_gradio_app(get_gradio_analysis_service),
+    path="/",
+    css=APP_CSS,
+)
