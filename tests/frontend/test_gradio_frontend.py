@@ -2,7 +2,7 @@ import gradio as gr
 import pytest
 
 from app.domain import TranscriptAnalysis
-from app.errors import AnalysisNotFoundError, InvalidTranscriptError
+from app.errors import AnalysisNotFoundError, ConfigurationError, InvalidTranscriptError
 from app.frontend import analyze_transcript, format_action_items, lookup_analysis
 
 
@@ -23,6 +23,14 @@ class FakeService:
         if analysis_id != self.analysis.id:
             raise AnalysisNotFoundError(f"Transcript analysis '{analysis_id}' was not found.")
         return self.analysis
+
+
+class MisconfiguredService:
+    def analyze(self, transcript: str) -> TranscriptAnalysis:
+        raise ConfigurationError("OPENAI_API_KEY is not configured.")
+
+    def get(self, analysis_id: str) -> TranscriptAnalysis:
+        raise ConfigurationError("OPENAI_API_KEY is not configured.")
 
 
 def test_analyze_transcript_returns_formatted_result() -> None:
@@ -53,6 +61,11 @@ def test_analyze_transcript_maps_empty_input_to_gradio_error() -> None:
 def test_lookup_analysis_maps_missing_id_to_gradio_error() -> None:
     with pytest.raises(gr.Error, match="Transcript analysis 'missing-id' was not found."):
         lookup_analysis("missing-id", FakeService)
+
+
+def test_analyze_transcript_maps_configuration_errors_to_gradio_error() -> None:
+    with pytest.raises(gr.Error, match="OPENAI_API_KEY is not configured."):
+        analyze_transcript("Discuss roadmap.", MisconfiguredService)
 
 
 def test_format_action_items_handles_empty_list() -> None:

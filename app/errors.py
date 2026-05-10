@@ -10,5 +10,9 @@ class AnalysisNotFoundError(TranscriptAnalysisError):
     pass
 
 
+class ConfigurationError(TranscriptAnalysisError):
+    pass
+
+
 class LLMCompletionError(TranscriptAnalysisError):
     pass

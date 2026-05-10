@@ -3,7 +3,7 @@ from collections.abc import Callable
 import gradio as gr
 
 from app.domain import TranscriptAnalysis
-from app.errors import AnalysisNotFoundError, InvalidTranscriptError, LLMCompletionError
+from app.errors import AnalysisNotFoundError, ConfigurationError, InvalidTranscriptError, LLMCompletionError
 from app.services import TranscriptAnalysisService
 
 ServiceFactory = Callable[[], TranscriptAnalysisService]
@@ -60,7 +60,7 @@ def build_gradio_app(service_factory: ServiceFactory) -> gr.Blocks:
 def analyze_transcript(transcript: str, service_factory: ServiceFactory) -> FrontendResult:
     try:
         analysis = service_factory().analyze(transcript)
-    except (InvalidTranscriptError, LLMCompletionError) as exc:
+    except (ConfigurationError, InvalidTranscriptError, LLMCompletionError) as exc:
         raise gr.Error(str(exc)) from exc
 
     return format_analysis(analysis)
@@ -69,7 +69,7 @@ def analyze_transcript(transcript: str, service_factory: ServiceFactory) -> Fron
 def lookup_analysis(analysis_id: str, service_factory: ServiceFactory) -> FrontendResult:
     try:
         analysis = service_factory().get(analysis_id.strip())
-    except (AnalysisNotFoundError, InvalidTranscriptError, LLMCompletionError) as exc:
+    except (AnalysisNotFoundError, ConfigurationError, InvalidTranscriptError, LLMCompletionError) as exc:
         raise gr.Error(str(exc)) from exc
 
     return format_analysis(analysis)

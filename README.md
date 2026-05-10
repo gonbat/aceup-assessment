@@ -28,7 +28,12 @@
 ## Environment Variables
 
 1. Create a `.env` file in the root directory of the project
-2. Copy the contents of the provided `.env` file into your local `.env` file
+2. Add the OpenAI API key and optional model:
+
+```env
+OPENAI_API_KEY=your-openai-api-key
+OPENAI_MODEL=gpt-4o-2024-08-06
+```
 
 ## Running Tests
 
@@ -75,7 +80,7 @@ http://127.0.0.1:8000/docs
 The Gradio frontend is available at:
 
 ```text
-http://127.0.0.1:8000/ui
+http://127.0.0.1:8000/
 ```
 
 Analyze one transcript:

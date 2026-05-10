@@ -2,6 +2,7 @@ from pydantic import BaseModel
 import pytest
 from fastapi.testclient import TestClient
 
+from app.errors import ConfigurationError
 from app.main import app, get_analysis_service
 from app.ports import LLm
 from app.repositories import InMemoryTranscriptAnalysisRepository
@@ -96,8 +97,28 @@ def test_analyze_batch_rejects_empty_transcript(client: TestClient) -> None:
     assert response.json()["detail"] == "Transcript cannot be empty."
 
 
+def test_configuration_error_returns_503() -> None:
+    def raise_configuration_error() -> TranscriptAnalysisService:
+        raise ConfigurationError(
+            "OPENAI_API_KEY is not configured. Set it in .env or as an environment variable."
+        )
+
+    app.dependency_overrides[get_analysis_service] = raise_configuration_error
+
+    try:
+        with TestClient(app) as test_client:
+            response = test_client.get("/analyses", params={"transcript": "Discuss rollout plan."})
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == (
+        "OPENAI_API_KEY is not configured. Set it in .env or as an environment variable."
+    )
+
+
 def test_gradio_ui_is_mounted(client: TestClient) -> None:
-    response = client.get("/ui/", follow_redirects=True)
+    response = client.get("/", follow_redirects=True)
 
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]

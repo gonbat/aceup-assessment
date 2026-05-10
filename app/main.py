@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import Depends, FastAPI, Query, Request
 from fastapi.responses import JSONResponse
 import gradio as gr
+from pydantic import ValidationError
 
 from app.adapters.openai import OpenAIAdapter
 from app.configurations import EnvConfigs
@@ -13,7 +14,12 @@ from app.schemas import (
     BatchTranscriptAnalysisResponse,
     TranscriptAnalysisResponse,
 )
-from app.errors import AnalysisNotFoundError, InvalidTranscriptError, LLMCompletionError
+from app.errors import (
+    AnalysisNotFoundError,
+    ConfigurationError,
+    InvalidTranscriptError,
+    LLMCompletionError,
+)
 from app.frontend import build_gradio_app
 from app.ports import LLm
 from app.repositories import InMemoryTranscriptAnalysisRepository, TranscriptAnalysisRepository
@@ -30,7 +36,12 @@ _repository = InMemoryTranscriptAnalysisRepository()
 
 @lru_cache
 def get_env_configs() -> EnvConfigs:
-    return EnvConfigs()
+    try:
+        return EnvConfigs()
+    except ValidationError as exc:
+        raise ConfigurationError(
+            "OPENAI_API_KEY is not configured. Set it in .env or as an environment variable."
+        ) from exc
 
 
 @lru_cache
@@ -62,6 +73,11 @@ async def invalid_transcript_handler(_: Request, exc: InvalidTranscriptError) ->
 @app.exception_handler(AnalysisNotFoundError)
 async def analysis_not_found_handler(_: Request, exc: AnalysisNotFoundError) -> JSONResponse:
     return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+
+@app.exception_handler(ConfigurationError)
+async def configuration_error_handler(_: Request, exc: ConfigurationError) -> JSONResponse:
+    return JSONResponse(status_code=503, content={"detail": str(exc)})
 
 
 @app.exception_handler(LLMCompletionError)
@@ -96,4 +112,4 @@ async def analyze_transcripts_batch(
     return to_batch_transcript_analysis_response(analyses)
 
 
-app = gr.mount_gradio_app(app, build_gradio_app(get_gradio_analysis_service), path="/ui")
+app = gr.mount_gradio_app(app, build_gradio_app(get_gradio_analysis_service), path="/")
